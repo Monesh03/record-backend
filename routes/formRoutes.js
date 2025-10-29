@@ -14,12 +14,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// =========================
-//  CREATE OR FETCH FORM
-// =========================
-// =========================
-//  CREATE OR FETCH FORM + USER DETAILS
-// =========================
+
 router.get("/", protect, async (req, res) => {
   try {
     const userId = req.user._id;

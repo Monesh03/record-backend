@@ -11,7 +11,7 @@ export const protect = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = await User.findById(decoded.userId).select("-password");
 
-    next();
+    next();//moves to next route
   } catch (error) {
     res.status(401).json({ message: "Token invalid or expired" });
   }

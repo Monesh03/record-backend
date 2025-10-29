@@ -4,7 +4,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
-import formRoutes from "./routes/formRoutes.js"
+import formRoutes from "./routes/formRoutes.js";
 import path from "path";
 import { fileURLToPath } from "url";
 
