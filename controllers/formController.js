@@ -1,29 +1,43 @@
+// controllers/formController.js
 import multer from "multer";
+import path from "path";
+import fs from "fs";
 import FormEntry from "../models/FormEntry.js";
 import User from "../models/User.js";
 
-// Store file in 'uploads/' folder
+const UPLOAD_DIR = "uploads";
+if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+
+/**
+ * Multer storage: safer filename creation using user.uid (string).
+ * If req.user is missing, filename will include "anon".
+ */
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "uploads/"),
-  filename: (req, file, cb) =>
-    cb(null, `${req.user._id}_${Date.now()}_${file.originalname}`)
+  destination: (req, file, cb) => cb(null, UPLOAD_DIR),
+  filename: (req, file, cb) => {
+    const safeName = path.basename(file.originalname).replace(/[^a-zA-Z0-9.\-_]/g, "_");
+    const idPart = req.user?.uid || "anon";
+    cb(null, `${idPart}_${Date.now()}_${safeName}`);
+  },
 });
 export const upload = multer({ storage });
 
-// Controller: handle profile upload
+/**
+ * uploadProfile
+ * - requires authentication (req.user)
+ * - saves/updates FormEntry.profilePic
+ */
 export const uploadProfile = async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ message: "No file uploaded" });
-    }
+    if (!req.user) return res.status(401).json({ message: "User not authenticated" });
+    if (!req.file) return res.status(400).json({ message: "No file uploaded" });
 
-    const userId = req.user._id;
-    const imagePath = `/uploads/${req.file.filename}`;
+    const userId = req.user.uid; // using uid (string)
+    const imagePath = `/${UPLOAD_DIR}/${req.file.filename}`;
 
-    // ✅ Update or create with profilePic field
     const updated = await FormEntry.findOneAndUpdate(
       { userId },
-      { $set: { profilePic: imagePath } },
+      { $set: { profilePic: imagePath, userId } }, // ensure userId present on upsert
       { upsert: true, new: true }
     );
 
@@ -37,30 +51,27 @@ export const uploadProfile = async (req, res) => {
   }
 };
 
-
-/** 🟢 Get or create form entry for logged-in user */
+/**
+ * getFormData
+ * - returns the form entry for the logged-in user (creates if missing)
+ * - includes basic user info from req.user
+ */
 export const getFormData = async (req, res) => {
   try {
-    console.log("🟢 req.user:", req.user); // ✅ Check if user info exists
+    if (!req.user) return res.status(401).json({ message: "User not authenticated" });
 
-    const userId = req.user?._id;
-    if (!userId) {
-      return res.status(401).json({ message: "User not authenticated" });
-    }
-
+    const userId = req.user.uid;
     let form = await FormEntry.findOne({ userId });
     if (!form) {
       form = await FormEntry.create({ userId });
     }
 
-    const user = await User.findById(userId).select("name email");
-    console.log("🟣 Found user:", user); // ✅ Check if name/email found
-
     res.status(200).json({
       ...form.toObject(),
       user: {
-        name: user?.name || "",
-        email: user?.email || "",
+        name: req.user.name || "",
+        email: req.user.email || "",
+        uid: req.user.uid || undefined,
       },
     });
   } catch (error) {
@@ -69,17 +80,21 @@ export const getFormData = async (req, res) => {
   }
 };
 
-
-
-/** 🟡 Save current step data (autosave on Next or Back) */
+/**
+ * saveStepData
+ * - autosave for step data (step param expected)
+ * - example route: POST /api/form/step/1
+ */
 export const saveStepData = async (req, res) => {
   try {
-    const userId = req.user._id;
+    if (!req.user) return res.status(401).json({ message: "User not authenticated" });
+
+    const userId = req.user.uid;
     const { step } = req.params;
     const stepKey = `step${step}`;
     const data = req.body;
 
-    if (!stepKey.startsWith("step"))
+    if (!/^step\d+$/.test(stepKey))
       return res.status(400).json({ message: "Invalid step key" });
 
     const update = { [stepKey]: data };
@@ -91,14 +106,20 @@ export const saveStepData = async (req, res) => {
 
     res.status(200).json({ message: `Step ${step} saved`, form });
   } catch (error) {
+    console.error("Error saving step:", error);
     res.status(500).json({ message: "Server error while saving step" });
   }
 };
 
-/** 🔵 Final submission */
+/**
+ * submitForm
+ * - final submission: marks isSubmitted true
+ */
 export const submitForm = async (req, res) => {
   try {
-    const userId = req.user._id;
+    if (!req.user) return res.status(401).json({ message: "User not authenticated" });
+
+    const userId = req.user.uid;
     await FormEntry.findOneAndUpdate(
       { userId },
       { $set: { isSubmitted: true } },
@@ -106,18 +127,24 @@ export const submitForm = async (req, res) => {
     );
     res.status(200).json({ message: "Form submitted successfully" });
   } catch (error) {
+    console.error("Submit form error:", error);
     res.status(500).json({ message: "Error submitting form" });
   }
 };
 
-
-/** 🟣 Check if user has already submitted */
+/**
+ * checkSubmissionStatus
+ * - returns boolean isSubmitted
+ */
 export const checkSubmissionStatus = async (req, res) => {
   try {
-    const userId = req.user._id;
+    if (!req.user) return res.status(401).json({ message: "User not authenticated" });
+
+    const userId = req.user.uid;
     const form = await FormEntry.findOne({ userId });
     res.status(200).json({ isSubmitted: form?.isSubmitted || false });
   } catch (error) {
+    console.error("Check submission status error:", error);
     res.status(500).json({ message: "Server error checking submission" });
   }
 };

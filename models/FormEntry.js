@@ -1,8 +1,9 @@
+// models/FormEntry.js
 import mongoose from "mongoose";
 
 const formEntrySchema = new mongoose.Schema(
   {
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", unique: true },
+    userId: { type: String, ref: "User", unique: true, required: true }, // now holds User.uid (string)
     profilePic: { type: String, default: "" },
     step1: { type: Object, default: {} },
     step2: { type: Object, default: {} },
