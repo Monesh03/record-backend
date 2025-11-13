@@ -18,22 +18,10 @@ const __dirname = path.dirname(__filename);
 app.use(express.json());
 app.use(cookieParser());
 
-// CORS - allow localhost for dev and the FRONTEND_URL for prod
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
-const corsOptions = {
-  origin: (origin, callback) => {
-    // allow requests with no origin like curl/postman or server-to-server
-    if (!origin) return callback(null, true);
-    const allowed = [FRONTEND_URL];
-    if (allowed.includes(origin)) return callback(null, true);
-    return callback(new Error("CORS: Origin not allowed"));
-  },
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true,
-};
-
-app.use(cors(corsOptions));
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
 // ensure preflight requests get handled
 app.options("*", cors(corsOptions));
 
