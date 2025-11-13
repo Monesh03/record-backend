@@ -68,19 +68,23 @@ export const loginUser = async (req, res) => {
 // Verify
 export const verifyToken = async (req, res) => {
   try {
-    const token = req.cookies?.jwt;
-    if (!token) return res.status(401).json({ message: "No token" });
+    // Accept cookie OR Authorization header (Bearer token)
+    const cookieToken = req.cookies?.jwt;
+    const headerToken = (req.headers.authorization || "").split(" ")[1];
+    const token = cookieToken || headerToken;
 
+    if (!token) return res.status(401).json({ loggedIn: false, message: "No token" });
+
+    // verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // decoded.userId is uid (string)
     const user = await User.findOne({ uid: decoded.userId }).select("uid name email");
-
-    if (!user) return res.status(401).json({ message: "Invalid token" });
+    if (!user) return res.status(401).json({ loggedIn: false, message: "Invalid token" });
 
     res.status(200).json({ loggedIn: true, user });
   } catch (error) {
-    console.error("Verify token error:", error);
+    console.error("Verify token error:", error.message);
     res.status(401).json({ loggedIn: false, message: "Unauthorized" });
   }
 };
