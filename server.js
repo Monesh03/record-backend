@@ -8,31 +8,30 @@ import formRoutes from "./routes/formRoutes.js";
 import path from "path";
 import { fileURLToPath } from "url";
 
-
 dotenv.config();
 connectDB();
 
 const app = express();
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+
+app.set("trust proxy", 1);
 
 app.use(express.json());
 app.use(cookieParser());
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// Allow CRA origin (http://localhost:3000)
 app.use(
   cors({
     origin: [
       "http://localhost:3000",
-      "https://your-frontend-domain.vercel.app",
+      "https://record-frontend.vercel.app", // <-- CHANGE THIS TO YOUR FRONTEND DOMAIN
     ],
-    methods: ["GET", "POST", "PUT","PATCH", "DELETE"],
     credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
   })
 );
 
-// Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/form", formRoutes);
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
