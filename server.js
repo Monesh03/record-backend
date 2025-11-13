@@ -25,7 +25,8 @@ app.use(
   cors({
     origin: [
       "http://localhost:3000",
-      "https://record-frontend.vercel.app", // <-- CHANGE THIS TO YOUR FRONTEND DOMAIN
+      "https://record-frontend.vercel.app",
+      "https://record-frontend-weld.vercel.app", // <-- CHANGE THIS TO YOUR FRONTEND DOMAIN
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
