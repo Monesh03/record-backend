@@ -21,12 +21,12 @@ app.use(cookieParser());
 
 
 // Allow CRA origin (http://localhost:3000)
-app.use(
-  cors({
-    origin: "http://localhost:3000",
-    credentials: true, // important for cookie-based JWT
-  })
-);
+app.use(cors({
+  origin: "http://localhost:3000",
+  methods: ["GET","POST","PUT","DELETE","OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true // if you send cookies or Authorization that relies on credentials
+}));
 
 // Routes
 app.use("/api/auth", authRoutes);
